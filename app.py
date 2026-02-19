@@ -1,7 +1,7 @@
 # Import flask and its componests
 from flask import *
 
-# import the pymysql module : it helps us crate connections btw python and 
+# import the pymysql module : it helps us crate connections btw python and mysql database
 import pymysql
 
 #create a flask application and give it a name
@@ -27,7 +27,7 @@ def signup():
         cursor = connection.cursor()
 
         # structure an sql to insert the details received from  the form
-        # The %s is a placeholder ->actual values
+        # The %s is a placeholder ->actual values (prevents SQL injection)
         sql = "INSERT INTO users(username,email,phone,password) VALUES(%s, %s, %s, %s)"
 
         #create a tuple that will hold all the data gotten from the form
@@ -42,11 +42,49 @@ def signup():
 
         return jsonify({"message" : "user registered successfully."})
 
+# Below is the login/sign in route
+@app.route("/api/signin", methods=["POST"])
+def signin():
+    if request.method == "POST":
+        # Extract the two details entered on the form
+        email = request.form["email"]
+        password = request.form["password"]
+
+        #print out the details entered
+        #print(email,password)
+
+        #create / establish a connection to the database
+        connection = pymysql.connect(host="localhost", user="root", password="", database="sokogardenonline" )
+
+        #create a cursor
+        cursor = connection.cursor(pymysql.cursors.DictCursor)
+
+        # structure the sql query that will check whether the email or password entered are corrct
+        sql="SELECT * FROM users WHERE email = %s AND password = %s"
+
+        # put the data received from the form into a tuple
+        data = (email,password)
+
+        # by use of the cursor execute the sql
+        cursor.execute(sql,data)
+
+        #check whether there are rows returned and store on a variable
+        count = cursor.rowcount
+
+
+        # if there are records returned it means the password and the email are correct otherwise it means they are vwrong\
+        if count == 0:
+            return jsonify({"message" : "Login Failed"})
+        else:
+            # there must be a user so we create a variable that will hold the details of the user fetched from the database
+    
+            user=cursor.fetchone()
+            # return the details to the frontend as well as a message
+            return jsonify({"message" : " User Logged in successfully", "user":user})
 
 
 
-
-
+       
 
 
 # run the application
